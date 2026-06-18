@@ -129,6 +129,7 @@ def run(config: Config) -> dict:
             device=config.device,
             normalize=config.normalize,
             cache_dir=str(config.hf_cache_dir),
+            max_seq_length=config.chunk_size,
         )
     except Exception as exc:
         # Model can't load (no download / not installed). Nothing to embed —

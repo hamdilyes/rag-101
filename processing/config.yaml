@@ -6,7 +6,9 @@
 resources:
   # Number of parallel worker processes used for parse + chunk (CPU-bound).
   # "auto" -> min(cpu_count - 1, ram_budget). Set an integer to force it.
-  max_workers: auto
+  # Set to 1 here because the machine is memory-constrained; raise it (or use
+  # "auto") on a freer machine for faster parsing.
+  max_workers: 1
 
   # Soft RAM ceiling for the parse/chunk worker pool, in GB. The orchestrator
   # caps the worker count so that (workers * per_worker_ram_gb) stays under this
@@ -23,7 +25,9 @@ resources:
   per_worker_ram_gb: 0.3
 
   # Batch size for the embedding stage (smaller = lower transient RAM).
-  embed_batch_size: 8
+  # Kept low to hold the embedding-stage peak under ~3 GB on top of the
+  # model weights (~2.4 GB).
+  embed_batch_size: 4
 
 parsing:
   # Drop pages/blocks with fewer than this many characters (cover pages, etc.).

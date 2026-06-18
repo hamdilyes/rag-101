@@ -7,6 +7,9 @@ parallelizable work (parse + chunk) already happened upstream.
 
 from __future__ import annotations
 
+import os
+import time
+
 import numpy as np
 
 
@@ -17,15 +20,34 @@ class Embedder:
         device: str = "auto",
         normalize: bool = True,
         cache_dir: str | None = None,
+        max_seq_length: int | None = 512,
     ):
         from sentence_transformers import SentenceTransformer
 
         resolved = self._resolve_device(device)
+
+        # Use all CPU cores for inference (avoids accidental single-threading).
+        if resolved == "cpu":
+            try:
+                import torch
+
+                torch.set_num_threads(os.cpu_count() or 4)
+            except Exception:
+                pass
+
         self.model = SentenceTransformer(
             model_name,
             device=resolved,
             cache_folder=cache_dir,
         )
+        # Cap the sequence length so no single chunk can blow up compute
+        # (attention is quadratic in length). Matches the chunk token budget.
+        if max_seq_length:
+            try:
+                self.model.max_seq_length = int(max_seq_length)
+            except Exception:
+                pass
+
         self.normalize = normalize
         self.device = resolved
         self.dim = self.model.get_sentence_embedding_dimension()
@@ -65,6 +87,7 @@ class Embedder:
         vectors: list[np.ndarray] = []
         kept: list[int] = []
         n = len(texts)
+        t0 = time.time()
 
         for start in range(0, n, batch_size):
             idx = list(range(start, min(start + batch_size, n)))
@@ -75,17 +98,23 @@ class Embedder:
                     vectors.append(embs[j])
                     kept.append(i)
             except Exception as exc:
-                print(f"  [embed] batch {start}-{idx[-1]} failed ({exc}); retrying per item")
+                print(f"  [embed] batch {start}-{idx[-1]} failed ({exc}); retrying per item", flush=True)
                 for i in idx:
                     try:
                         vectors.append(self._encode([texts[i]])[0])
                         kept.append(i)
                     except Exception as exc2:
-                        print(f"  [embed] skipped chunk {i} ({exc2})")
+                        print(f"  [embed] skipped chunk {i} ({exc2})", flush=True)
             done = min(start + batch_size, n)
-            print(f"  [embed] {done}/{n} chunks", end="\r", flush=True)
+            elapsed = time.time() - t0
+            rate = done / elapsed if elapsed > 0 else 0
+            eta = (n - done) / rate if rate > 0 else 0
+            # Newline-terminated so progress is visible in piped/log output.
+            print(
+                f"  [embed] {done}/{n} chunks  ({rate:.1f}/s, eta {eta:.0f}s)",
+                flush=True,
+            )
 
-        print()
         if vectors:
             return np.vstack(vectors).astype(np.float32), kept
         return np.zeros((0, self.dim), dtype=np.float32), kept

@@ -85,12 +85,23 @@ def load_config(config_path: str | os.PathLike = "config.yaml") -> Config:
 
 
 def current_ram_gb() -> float:
-    """Resident memory of this process tree, in GB (best-effort)."""
-    proc = psutil.Process()
-    total = proc.memory_info().rss
-    for child in proc.children(recursive=True):
+    """Resident memory of this process tree, in GB (best-effort).
+
+    Never raises: on a memory-starved machine even psutil's own bookkeeping can
+    fail (e.g. WinError 1455, paging file too small). In that case we fall back
+    to the main process RSS, or 0.0, so the RAM check can't crash the pipeline.
+    """
+    try:
+        proc = psutil.Process()
+        total = proc.memory_info().rss
         try:
-            total += child.memory_info().rss
-        except psutil.NoSuchProcess:
-            pass
-    return total / (1024**3)
+            for child in proc.children(recursive=True):
+                try:
+                    total += child.memory_info().rss
+                except Exception:
+                    pass
+        except Exception:
+            pass  # children enumeration failed; main RSS is good enough
+        return total / (1024**3)
+    except Exception:
+        return 0.0
