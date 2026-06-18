@@ -19,8 +19,16 @@ export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const hasChat = messages.length > 0;
+
+  function newChat() {
+    // Erase the current (only) chat and stop any in-flight stream.
+    abortRef.current?.abort();
+    setMessages([]);
+    setBusy(false);
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -36,48 +44,40 @@ export default function Home() {
     setMessages((m) => [...m, userMsg, assistantMsg]);
 
     const idx = history.length + 1; // index of the assistant message
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Guarded update: if "New chat" cleared the conversation mid-stream, the
+    // target message no longer exists — skip the write instead of crashing.
+    const patch = (fn: (cur: ChatMessage) => ChatMessage) =>
+      setMessages((m) => {
+        if (!m[idx]) return m;
+        const copy = [...m];
+        copy[idx] = fn(copy[idx]);
+        return copy;
+      });
 
     await streamChat(
       text,
       history,
       {
-        onSources: (sources) =>
-          setMessages((m) => {
-            const copy = [...m];
-            copy[idx] = { ...copy[idx], sources };
-            return copy;
-          }),
-        onDelta: (delta) =>
-          setMessages((m) => {
-            const copy = [...m];
-            copy[idx] = { ...copy[idx], content: copy[idx].content + delta };
-            return copy;
-          }),
+        onSources: (sources) => patch((cur) => ({ ...cur, sources })),
+        onDelta: (delta) => patch((cur) => ({ ...cur, content: cur.content + delta })),
         onError: (msg) =>
-          setMessages((m) => {
-            const copy = [...m];
-            copy[idx] = { ...copy[idx], content: appendError(copy[idx].content, msg), streaming: false };
-            return copy;
-          }),
-        onDone: () =>
-          setMessages((m) => {
-            const copy = [...m];
-            copy[idx] = { ...copy[idx], streaming: false };
-            return copy;
-          }),
+          patch((cur) => ({ ...cur, content: appendError(cur.content, msg), streaming: false })),
+        onDone: () => patch((cur) => ({ ...cur, streaming: false })),
       },
+      controller.signal,
     ).catch((e) => {
-      const msg =
-        e instanceof Error && e.name === "AbortError"
-          ? "Request cancelled."
-          : "Could not reach the server. Is the backend running?";
-      setMessages((m) => {
-        const copy = [...m];
-        copy[idx] = { ...copy[idx], content: appendError(copy[idx].content, msg), streaming: false };
-        return copy;
-      });
+      if (e instanceof Error && e.name === "AbortError") return; // chat was reset
+      patch((cur) => ({
+        ...cur,
+        content: appendError(cur.content, "Could not reach the server. Is the backend running?"),
+        streaming: false,
+      }));
     });
 
+    if (abortRef.current === controller) abortRef.current = null;
     setBusy(false);
   }
 
@@ -86,7 +86,7 @@ export default function Home() {
       <Sidebar
         open={sidebarOpen}
         onToggle={() => setSidebarOpen((o) => !o)}
-        onNewChat={() => setMessages([])}
+        onNewChat={newChat}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -99,9 +99,6 @@ export default function Home() {
                 Salam Ostad
               </h1>
               <ChatInput onSend={send} disabled={busy} />
-              <p className="mt-4 text-center text-sm text-ink-faint">
-                Ask anything about your document corpus.
-              </p>
             </div>
           </div>
         ) : (

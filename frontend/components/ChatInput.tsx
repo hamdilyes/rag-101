@@ -42,7 +42,7 @@ export default function ChatInput({ onSend, disabled, placeholder }: ChatInputPr
         rows={1}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder={placeholder ?? "Ask about your documents…"}
+        placeholder={placeholder ?? "Ask anything about your documents ..."}
         className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-6 text-ink placeholder:text-ink-faint focus:outline-none"
       />
       <div className="flex items-center justify-end px-3 pb-3 pt-1">

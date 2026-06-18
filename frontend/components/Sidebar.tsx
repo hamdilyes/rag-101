@@ -40,26 +40,10 @@ export default function Sidebar({ open, onToggle, onNewChat }: SidebarProps) {
         </button>
       </div>
 
-      {open && (
-        <div className="mt-6 flex-1 overflow-y-auto px-3">
-          <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
-            Recents
-          </p>
-          <div className="space-y-0.5">
-            {/* Placeholder recents; wire to history persistence later. */}
-            {["Current chat"].map((t) => (
-              <button
-                key={t}
-                className="w-full truncate rounded-lg px-2 py-1.5 text-left text-sm text-ink-soft hover:bg-border/60"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Single-chat app: no recents list. The space pushes the user area down. */}
+      <div className="flex-1" />
 
-      <div className="mt-auto border-t border-border p-3">
+      <div className="border-t border-border p-3">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-clay text-xs font-medium text-white">
             O
