@@ -1,0 +1,8 @@
+{
+  "model": "Qwen/Qwen3-Embedding-0.6B",
+  "dim": 1024,
+  "count": 293,
+  "normalized": true,
+  "chunk_size": 512,
+  "chunk_overlap": 64
+}
