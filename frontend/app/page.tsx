@@ -10,8 +10,7 @@ import type { ChatMessage } from "@/lib/types";
 // Render an error inside the assistant message, in the same bubble as a normal
 // answer. If text already streamed before the failure, keep it and append.
 function appendError(existing: string, message: string): string {
-  const note = `⚠️ ${message}`;
-  return existing.trim() ? `${existing}\n\n${note}` : note;
+  return existing.trim() ? `${existing}\n\n${message}` : message;
 }
 
 export default function Home() {
@@ -72,7 +71,7 @@ export default function Home() {
       if (e instanceof Error && e.name === "AbortError") return; // chat was reset
       patch((cur) => ({
         ...cur,
-        content: appendError(cur.content, "Could not reach the server. Is the backend running?"),
+        content: appendError(cur.content, "Our LLM is currently offline. Please try again in a moment."),
         streaming: false,
       }));
     });

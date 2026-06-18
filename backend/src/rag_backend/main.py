@@ -138,8 +138,19 @@ async def chat(req: ChatRequest) -> StreamingResponse:
         try:
             async for text in stream_answer(settings, SYSTEM_PROMPT, messages):
                 yield _sse({"type": "delta", "text": text})
-        except Exception as exc:
+        except RuntimeError as exc:
+            # Our own clear config errors (e.g. missing API key) are worth showing.
             yield _sse({"type": "error", "message": str(exc)})
+        except Exception as exc:
+            # Provider outage / timeout / network: keep the real cause in the logs,
+            # show the user a friendly message.
+            print(f"[chat] LLM call failed: {exc!r}")
+            yield _sse(
+                {
+                    "type": "error",
+                    "message": "Our LLM is currently offline. Please try again in a moment.",
+                }
+            )
 
         # 3) done event
         yield _sse({"type": "done"})

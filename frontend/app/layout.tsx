@@ -12,7 +12,7 @@ const serif = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "RAG-101",
+  title: "RAG101",
   description: "Chat with your document corpus",
 };
 
