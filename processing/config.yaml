@@ -1,0 +1,51 @@
+# ============================================================================
+#  Processing pipeline configuration
+#  All resource limits live here. Tune these to your machine.
+# ============================================================================
+
+resources:
+  # Number of parallel worker processes used for parse + chunk (CPU-bound).
+  # "auto" -> min(cpu_count - 1, ram_budget). Set an integer to force it.
+  # Set to 1 here because the machine is memory-constrained; raise it (or use
+  # "auto") on a freer machine for faster parsing.
+  max_workers: 1
+
+  # Soft RAM ceiling for the parse/chunk worker pool, in GB. The orchestrator
+  # caps the worker count so that (workers * per_worker_ram_gb) stays under this
+  # budget, and pauses spawning new work when measured RSS approaches the limit.
+  #
+  # Bounds the parse/chunk stage and transient embedding buffers. With the small
+  # embedding model (BAAI/bge-small-en-v1.5, ~130 MB weights) the total peak
+  # stays well under 1 GB.
+  max_ram_gb: 1.0
+
+  # Rough RAM cost of one parse/chunk worker. Used only to derive worker count.
+  per_worker_ram_gb: 0.3
+
+  # Batch size for the embedding stage. The small model is light, so a larger
+  # batch is fine and faster.
+  embed_batch_size: 32
+
+parsing:
+  # Drop pages/blocks with fewer than this many characters (cover pages, etc.).
+  min_chars: 50
+
+chunking:
+  # Target chunk size and overlap, measured in tokens of the embedding model's
+  # tokenizer (falls back to ~4 chars/token if the tokenizer is unavailable).
+  chunk_size: 512
+  chunk_overlap: 64
+
+embedding:
+  model: BAAI/bge-small-en-v1.5
+  device: auto          # auto | cpu | cuda
+  normalize: true       # L2-normalize so cosine == dot product
+  # Documents are embedded plain; the query gets a retrieval instruction prefix
+  # at query time in the backend (see retriever.py). This model MUST match the
+  # backend's embedding model so query and document vectors are comparable.
+
+paths:
+  corpus_dir: ../corpus
+  output_dir: ../data/index
+  # Local HF cache so re-runs don't re-download the model.
+  hf_cache_dir: ../.hf_cache

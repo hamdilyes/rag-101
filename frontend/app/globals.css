@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+  color-scheme: dark;
+}
+
+/* Thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4843 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #4a4843;
+  border-radius: 9999px;
+}
+
+/* Assistant markdown prose */
+.prose-rag {
+  @apply text-[15px] leading-7 text-ink;
+}
+.prose-rag p {
+  @apply my-3;
+}
+.prose-rag ul {
+  @apply my-3 list-disc pl-6;
+}
+.prose-rag ol {
+  @apply my-3 list-decimal pl-6;
+}
+.prose-rag li {
+  @apply my-1;
+}
+.prose-rag h1,
+.prose-rag h2,
+.prose-rag h3 {
+  @apply font-serif font-medium mt-5 mb-2;
+}
+.prose-rag code {
+  @apply rounded bg-sidebar px-1.5 py-0.5 text-[13px] font-mono;
+}
+.prose-rag pre {
+  @apply my-3 overflow-x-auto rounded-lg bg-[#2b2a27] p-4 text-[13px] text-[#f5f3ec];
+}
+.prose-rag pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+.prose-rag a {
+  @apply text-clay underline underline-offset-2;
+}
+.prose-rag strong {
+  @apply font-semibold;
+}
+
+/* Blinking caret for the streaming cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.caret {
+  animation: blink 1s step-end infinite;
+}
