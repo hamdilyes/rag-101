@@ -34,9 +34,9 @@ class Settings:
     rerank_top_n: int = int(os.getenv("RERANK_TOP_N", "5"))
     rerank_enabled: bool = _bool("RERANK_ENABLED", True)
 
-    # Models
-    embedding_model: str = os.getenv("EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-0.6B")
-    reranker_model: str = os.getenv("RERANKER_MODEL", "Qwen/Qwen3-Reranker-0.6B")
+    # Models (embedding model MUST match the one used to build the index)
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    reranker_model: str = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     # Paths
     index_dir: Path = (_REPO_ROOT / os.getenv("INDEX_DIR", "./data/index")).resolve()

@@ -1,4 +1,4 @@
-"""Embedding stage: encode chunk texts with Qwen3-Embedding via SentenceTransformers.
+"""Embedding stage: encode chunk texts with a SentenceTransformers model.
 
 Run once in the main process (the model is loaded a single time and texts are
 encoded in batches) so we don't pay model-load RAM per worker. The expensive,
@@ -81,8 +81,9 @@ class Embedder:
         Returns (embeddings, kept_indices). A batch that errors is retried one
         item at a time, and any individual chunk that still fails is skipped
         (logged) rather than aborting the run. `kept_indices` lets the caller
-        keep chunks.jsonl row-aligned with the embeddings matrix. Documents get
-        no instruction prefix (Qwen3 applies that on the query side only).
+        keep chunks.jsonl row-aligned with the embeddings matrix. Documents are
+        embedded plain; the retrieval instruction is applied to queries only,
+        at query time in the backend.
         """
         vectors: list[np.ndarray] = []
         kept: list[int] = []

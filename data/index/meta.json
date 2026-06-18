@@ -1,7 +1,7 @@
 {
-  "model": "Qwen/Qwen3-Embedding-0.6B",
-  "dim": 1024,
-  "count": 293,
+  "model": "BAAI/bge-small-en-v1.5",
+  "dim": 384,
+  "count": 259,
   "normalized": true,
   "chunk_size": 512,
   "chunk_overlap": 64

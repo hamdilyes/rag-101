@@ -1,7 +1,7 @@
 # Processing pipeline
 
-Parses the PDF corpus, chunks it, embeds the chunks with **Qwen3-Embedding**, and
-writes a committed index to `../data/index/`. The raw PDFs never leave your
+Parses the PDF corpus, chunks it, embeds the chunks with **`BAAI/bge-small-en-v1.5`**,
+and writes a committed index to `../data/index/`. The raw PDFs never leave your
 machine; only the embeddings are pushed.
 
 ## Setup
@@ -12,8 +12,9 @@ Uses [`uv`](https://docs.astral.sh/uv/). From this folder:
 uv sync
 ```
 
-This installs PyMuPDF, sentence-transformers, torch, etc. The Qwen embedding
-model downloads from HuggingFace on first run into `../.hf_cache` (git-ignored).
+This installs PyMuPDF, sentence-transformers, torch, etc. The embedding model
+(`BAAI/bge-small-en-v1.5`, ~130 MB) downloads from HuggingFace on first run into
+`../.hf_cache` (git-ignored).
 
 ## Run
 

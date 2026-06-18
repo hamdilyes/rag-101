@@ -6,8 +6,9 @@ embeddings, then launch the app and ask questions. Answers are grounded in your
 documents and show their sources.
 
 Only the generated embeddings are committed to git, never the source PDFs.
-Embeddings and reranking use Qwen models from HuggingFace. The chat answer comes
-from an LLM you configure (Claude by default, or any OpenAI-compatible API).
+Embeddings use a small HuggingFace model (`BAAI/bge-small-en-v1.5`); an optional
+cross-encoder reranker is available but off by default. The chat answer comes
+from an LLM you configure (OpenAI-compatible by default, e.g. OpenAI).
 
 > Development happens on the `dev` branch. `main` stays a brief pointer.
 
@@ -49,17 +50,17 @@ From the repo root, copy the example env file and edit it:
 cp .env.example .env
 ```
 
-Open `.env` and set your key. For Claude (default):
+Open `.env` and set your key. Default is an OpenAI-compatible provider:
 
 ```ini
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=sk-ant-...     # paste your key here
-LLM_MODEL=claude-opus-4-8
+LLM_PROVIDER=openai
+LLM_API_KEY=sk-...
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-5.4-nano-2026-03-17
 ```
 
-To use any other provider instead, set `LLM_PROVIDER=openai` and fill in
-`LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` (works with OpenAI, Together,
-Groq, Mistral, or a local server). See the comments in `.env.example`.
+`LLM_BASE_URL` can point at any OpenAI-compatible endpoint (OpenAI, Together,
+Groq, Mistral, or a local vLLM/llama.cpp server). See `.env.example`.
 
 ---
 
@@ -81,12 +82,11 @@ The settings you may want to change:
 | --- | --- | --- |
 | `resources.max_workers` | Parallel workers for parsing/chunking. `auto` uses your cores and RAM budget. | `auto` |
 | `resources.max_ram_gb` | RAM budget for the parse/chunk stage and transient buffers. | `1.0` |
-| `resources.embed_batch_size` | Bigger is faster but uses more memory. | `8` |
+| `resources.embed_batch_size` | Bigger is faster but uses more memory. | `32` |
 | `embedding.device` | `auto` picks GPU if you have one (`cuda`), else `cpu`. | `auto` |
 
-Memory note: the embedding model's own weights are about 2.4 GB and load during
-the embedding step, on top of `max_ram_gb`. So peak memory is roughly 2.5 to 3
-GB while embedding, regardless of the budget (which bounds the other stages).
+Memory note: the embedding model (`BAAI/bge-small-en-v1.5`) is small (~130 MB
+weights), so peak memory during processing stays well under 1 GB.
 
 ---
 
@@ -100,12 +100,12 @@ cd ..
 ```
 
 What happens: it parses every PDF, splits the text into chunks, downloads the
-Qwen embedding model on first run (about 1.2 GB, cached afterward in
-`.hf_cache/`), embeds every chunk, and writes the index to `data/index/`.
+embedding model on first run (`BAAI/bge-small-en-v1.5`, ~130 MB, cached
+afterward in `.hf_cache/`), embeds every chunk, and writes the index to
+`data/index/`.
 
-How long: dominated by the one-time model download and by embedding on your CPU.
-As a rough guide, a handful of typical PDFs is about 5 to 15 minutes on the first
-run (mostly the download) and about 2 to 8 minutes afterward. A GPU makes
+How long: fast. The small model downloads in seconds and embeds a handful of
+typical PDFs in well under a minute on CPU. A GPU makes
 embedding much faster.
 
 It is resilient by design: a broken page, a broken PDF, or an odd chunk is
@@ -152,8 +152,9 @@ uv sync          # first time only
 uv run rag-serve
 ```
 
-It serves at `http://localhost:8000`. On first query it also downloads the Qwen
-reranker model (cached afterward).
+It serves at `http://localhost:8000`. It loads the embedding model
+(`BAAI/bge-small-en-v1.5`) to embed your questions. The reranker is off by
+default; if you enable it, the cross-encoder downloads on first query.
 
 ### How do I know it is ready?
 
@@ -166,8 +167,8 @@ curl http://localhost:8000/api/health
 You want to see `"ready": true` and a non-zero `"chunks"` count:
 
 ```json
-{ "ready": true, "chunks": 812, "embedding_model": "Qwen/Qwen3-Embedding-0.6B",
-  "llm_provider": "anthropic", "llm_model": "claude-opus-4-8" }
+{ "ready": true, "chunks": 259, "embedding_model": "BAAI/bge-small-en-v1.5",
+  "llm_provider": "openai", "llm_model": "gpt-5.4-nano-2026-03-17" }
 ```
 
 If `"ready": false`, the index was not found; re-check Step 4.
