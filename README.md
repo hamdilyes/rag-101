@@ -10,7 +10,7 @@ Embeddings use a small HuggingFace model (`BAAI/bge-small-en-v1.5`); an optional
 cross-encoder reranker is available but off by default. The chat answer comes
 from an LLM you configure (OpenAI-compatible by default, e.g. OpenAI).
 
-> Development happens on the `dev` branch. `main` stays a brief pointer.
+> Releases are tagged on `main`; active development continues on `dev`.
 
 ---
 
