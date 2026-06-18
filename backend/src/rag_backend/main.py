@@ -14,6 +14,7 @@ POST /api/chat    -> Server-Sent-Events stream. Body:
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
@@ -26,36 +27,12 @@ from .llm import stream_answer
 from .retriever import RetrievedChunk, Retriever
 from .store import VectorStore
 
-app = FastAPI(title="RAG-101 backend")
-
-# CORS for local dev (the Next.js dev server proxies, but allow direct calls too).
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Lazy singletons populated on startup.
+# Singletons populated during the lifespan startup phase.
 _state: dict = {"store": None, "retriever": None}
 
 
-SYSTEM_PROMPT = (
-    "You are a helpful research assistant answering questions about a private "
-    "corpus of documents. Answer using ONLY the provided context. Cite the "
-    "sources you use inline using the format [<document> p.<page>]. If the "
-    "answer is not contained in the context, say you could not find it in the "
-    "documents rather than guessing. Be concise and precise."
-)
-
-
-class ChatRequest(BaseModel):
-    message: str
-    history: list[dict] = []
-
-
-@app.on_event("startup")
-def _startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     store = VectorStore(settings.index_dir)
     _state["store"] = store
     if store.ready:
@@ -70,6 +47,33 @@ def _startup() -> None:
             f"[startup] no index at {settings.index_dir}. "
             "Run the processing pipeline first."
         )
+    yield
+    _state.clear()
+
+
+app = FastAPI(title="RAG-101 backend", lifespan=lifespan)
+
+# CORS for local dev (the Next.js dev server proxies, but allow direct calls too).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+SYSTEM_PROMPT = (
+    "You are a helpful research assistant answering questions about a private "
+    "corpus of documents. Answer using ONLY the provided context. Cite the "
+    "sources you use inline using the format [<document> p.<page>]. If the "
+    "answer is not contained in the context, say you could not find it in the "
+    "documents rather than guessing. Be concise and precise."
+)
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []
 
 
 @app.get("/api/health")
