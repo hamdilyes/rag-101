@@ -7,6 +7,13 @@ import Message from "@/components/Message";
 import { streamChat } from "@/lib/chat";
 import type { ChatMessage } from "@/lib/types";
 
+// Render an error inside the assistant message, in the same bubble as a normal
+// answer. If text already streamed before the failure, keep it and append.
+function appendError(existing: string, message: string): string {
+  const note = `⚠️ ${message}`;
+  return existing.trim() ? `${existing}\n\n${note}` : note;
+}
+
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -49,12 +56,7 @@ export default function Home() {
         onError: (msg) =>
           setMessages((m) => {
             const copy = [...m];
-            copy[idx] = {
-              ...copy[idx],
-              content:
-                copy[idx].content + `\n\n_Error: ${msg}_`,
-              streaming: false,
-            };
+            copy[idx] = { ...copy[idx], content: appendError(copy[idx].content, msg), streaming: false };
             return copy;
           }),
         onDone: () =>
@@ -65,13 +67,13 @@ export default function Home() {
           }),
       },
     ).catch((e) => {
+      const msg =
+        e instanceof Error && e.name === "AbortError"
+          ? "Request cancelled."
+          : "Could not reach the server. Is the backend running?";
       setMessages((m) => {
         const copy = [...m];
-        copy[idx] = {
-          ...copy[idx],
-          content: copy[idx].content + `\n\n_Error: ${String(e)}_`,
-          streaming: false,
-        };
+        copy[idx] = { ...copy[idx], content: appendError(copy[idx].content, msg), streaming: false };
         return copy;
       });
     });

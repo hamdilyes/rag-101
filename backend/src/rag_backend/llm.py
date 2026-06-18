@@ -41,6 +41,11 @@ async def _stream_anthropic(
     from anthropic import AsyncAnthropic
 
     api_key = settings.anthropic_api_key or settings.llm_api_key
+    if not api_key:
+        raise RuntimeError(
+            "No LLM API key configured. Set ANTHROPIC_API_KEY in your .env "
+            "(or switch LLM_PROVIDER to an OpenAI-compatible endpoint)."
+        )
     client = AsyncAnthropic(api_key=api_key)
 
     # Streaming is the default for any potentially long output; .stream() also
@@ -59,6 +64,12 @@ async def _stream_openai(
     settings: Settings, system: str, messages: list[dict]
 ) -> AsyncIterator[str]:
     url = settings.llm_base_url.rstrip("/") + "/chat/completions"
+    # Require a key for hosted endpoints; local servers (vLLM/llama.cpp) often
+    # don't need one, so only enforce when pointing at a public api host.
+    if not settings.llm_api_key and "api." in settings.llm_base_url:
+        raise RuntimeError(
+            "No LLM API key configured. Set LLM_API_KEY in your .env."
+        )
     payload = {
         "model": settings.llm_model,
         "stream": True,
