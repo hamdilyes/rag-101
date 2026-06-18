@@ -216,3 +216,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ============================================================================
+#  RAG-101 project rules
+# ============================================================================
+
+# Corpus: never push the raw PDFs (only the embeddings get committed)
+corpus/**
+!corpus/.gitkeep
+
+# Keep the committed embeddings index, ignore scratch/temp processing artifacts
+data/tmp/
+data/**/*.lock
+!data/.gitkeep
+
+# HuggingFace model downloads / local model cache (not pushed)
+.hf_cache/
+models/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.local
+
+# Env / secrets
+.env.local
+

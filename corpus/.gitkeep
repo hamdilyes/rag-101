@@ -1,0 +1,8 @@
+# Drop your PDF files in this folder.
+#
+# The PDFs themselves are NEVER committed (see ../.gitignore). Only the
+# embeddings generated from them (in ../data/index) get pushed.
+#
+# After adding PDFs here, run the processing pipeline:
+#   cd ../processing
+#   uv run rag-process

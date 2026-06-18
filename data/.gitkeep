@@ -1,0 +1,7 @@
+# The processing pipeline writes the committed embeddings index to data/index/:
+#   chunks.jsonl     one line per chunk: {id, doc, page, text}
+#   embeddings.npy   float32 matrix, row-aligned with chunks.jsonl
+#   meta.json        model name, dimension, count, normalization flag
+#
+# These ARE committed (corpus PDFs are not). That is how a teammate can run the
+# app without ever receiving the source documents.
