@@ -43,13 +43,49 @@ class Embedder:
             pass
         return "cpu"
 
-    def encode_documents(self, texts: list[str], batch_size: int = 16) -> np.ndarray:
-        """Embed corpus chunks. Documents get no instruction prefix (Qwen3)."""
-        embs = self.model.encode(
-            texts,
-            batch_size=batch_size,
+    def _encode(self, batch: list[str]) -> np.ndarray:
+        return self.model.encode(
+            batch,
             normalize_embeddings=self.normalize,
-            show_progress_bar=True,
+            show_progress_bar=False,
             convert_to_numpy=True,
-        )
-        return embs.astype(np.float32)
+        ).astype(np.float32)
+
+    def encode_documents(
+        self, texts: list[str], batch_size: int = 16
+    ) -> tuple[np.ndarray, list[int]]:
+        """Embed corpus chunks resiliently.
+
+        Returns (embeddings, kept_indices). A batch that errors is retried one
+        item at a time, and any individual chunk that still fails is skipped
+        (logged) rather than aborting the run. `kept_indices` lets the caller
+        keep chunks.jsonl row-aligned with the embeddings matrix. Documents get
+        no instruction prefix (Qwen3 applies that on the query side only).
+        """
+        vectors: list[np.ndarray] = []
+        kept: list[int] = []
+        n = len(texts)
+
+        for start in range(0, n, batch_size):
+            idx = list(range(start, min(start + batch_size, n)))
+            batch = [texts[i] for i in idx]
+            try:
+                embs = self._encode(batch)
+                for j, i in enumerate(idx):
+                    vectors.append(embs[j])
+                    kept.append(i)
+            except Exception as exc:
+                print(f"  [embed] batch {start}-{idx[-1]} failed ({exc}); retrying per item")
+                for i in idx:
+                    try:
+                        vectors.append(self._encode([texts[i]])[0])
+                        kept.append(i)
+                    except Exception as exc2:
+                        print(f"  [embed] skipped chunk {i} ({exc2})")
+            done = min(start + batch_size, n)
+            print(f"  [embed] {done}/{n} chunks", end="\r", flush=True)
+
+        print()
+        if vectors:
+            return np.vstack(vectors).astype(np.float32), kept
+        return np.zeros((0, self.dim), dtype=np.float32), kept

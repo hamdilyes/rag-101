@@ -8,16 +8,22 @@ resources:
   # "auto" -> min(cpu_count - 1, ram_budget). Set an integer to force it.
   max_workers: auto
 
-  # Soft RAM ceiling for the whole pipeline, in GB. The orchestrator caps the
-  # worker count so that (workers * per_worker_ram_gb) stays under this budget,
-  # and pauses spawning new work when measured RSS approaches the limit.
-  max_ram_gb: 2.0
+  # Soft RAM ceiling for the parse/chunk worker pool, in GB. The orchestrator
+  # caps the worker count so that (workers * per_worker_ram_gb) stays under this
+  # budget, and pauses spawning new work when measured RSS approaches the limit.
+  #
+  # NOTE: this bounds the parallel parse+chunk stage and the transient embedding
+  # buffers. It does NOT shrink the embedding model's own weights — Qwen3-
+  # Embedding-0.6B in fp32 is ~2.4 GB on its own, which loads once during the
+  # embedding stage regardless of this number. To keep TOTAL memory near 1 GB,
+  # switch `embedding.model` to a smaller model (see README).
+  max_ram_gb: 1.0
 
   # Rough RAM cost of one parse/chunk worker. Used only to derive worker count.
-  per_worker_ram_gb: 0.4
+  per_worker_ram_gb: 0.3
 
-  # Batch size for the embedding stage (bigger = faster but more RAM/VRAM).
-  embed_batch_size: 16
+  # Batch size for the embedding stage (smaller = lower transient RAM).
+  embed_batch_size: 8
 
 parsing:
   # Drop pages/blocks with fewer than this many characters (cover pages, etc.).

@@ -123,24 +123,41 @@ def run(config: Config) -> dict:
 
     # ---- Stage 2: embed (single model load, batched) -----------------------
     print(f"Loading embedding model {config.embedding_model} ...")
-    embedder = Embedder(
-        config.embedding_model,
-        device=config.device,
-        normalize=config.normalize,
-        cache_dir=str(config.hf_cache_dir),
-    )
+    try:
+        embedder = Embedder(
+            config.embedding_model,
+            device=config.device,
+            normalize=config.normalize,
+            cache_dir=str(config.hf_cache_dir),
+        )
+    except Exception as exc:
+        # Model can't load (no download / not installed). Nothing to embed —
+        # exit cleanly with a clear message instead of a traceback.
+        print(
+            f"ERROR: could not load embedding model '{config.embedding_model}': {exc}\n"
+            "Check your internet connection / HuggingFace access and try again. "
+            "Parsing + chunking succeeded; no index was written."
+        )
+        return {"documents": len(pdfs), "chunks": len(all_chunks), "embedded": 0, "error": str(exc)}
+
     print(f"Embedding on device={embedder.device}, dim={embedder.dim} ...")
     texts = [c.text for c in all_chunks]
-    embeddings = embedder.encode_documents(
+    embeddings, kept = embedder.encode_documents(
         texts, batch_size=config.resources.embed_batch_size
     )
+    kept_chunks = [all_chunks[i] for i in kept]
+    skipped = len(all_chunks) - len(kept_chunks)
+    if skipped:
+        print(f"Skipped {skipped} chunk(s) that could not be embedded.")
 
     # ---- Write the committed index -----------------------------------------
-    _write_index(output_dir, all_chunks, embeddings, embedder, config)
+    _write_index(output_dir, kept_chunks, embeddings, embedder, config)
     print(f"Wrote index to {output_dir}")
     return {
         "documents": len(pdfs),
         "chunks": len(all_chunks),
+        "embedded": len(kept_chunks),
+        "skipped": skipped,
         "dim": embedder.dim,
     }
 

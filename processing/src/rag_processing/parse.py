@@ -23,10 +23,14 @@ def parse_pdf(path: str | Path, min_chars: int = 50) -> list[Page]:
     path = Path(path)
     pages: list[Page] = []
     with fitz.open(path) as pdf:
-        for i, page in enumerate(pdf, start=1):
-            text = _normalize(page.get_text("text"))
+        for i in range(pdf.page_count):
+            # Per-page guard: a single broken page is skipped, not fatal.
+            try:
+                text = _normalize(pdf[i].get_text("text"))
+            except Exception:
+                continue
             if len(text) >= min_chars:
-                pages.append(Page(doc=path.name, page=i, text=text))
+                pages.append(Page(doc=path.name, page=i + 1, text=text))
     return pages
 
 
