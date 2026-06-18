@@ -9,19 +9,20 @@ body {
 
 body {
   @apply bg-canvas text-ink font-sans antialiased;
+  color-scheme: dark;
 }
 
 /* Thin, unobtrusive scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #d8d4c6 transparent;
+  scrollbar-color: #4a4843 transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #d8d4c6;
+  background-color: #4a4843;
   border-radius: 9999px;
 }
 

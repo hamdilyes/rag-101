@@ -8,20 +8,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Warm cream surfaces, in the spirit of claude.ai.
-        canvas: "#FAF9F5",      // main chat area
-        sidebar: "#F0EEE6",     // left rail
-        raised: "#FFFFFF",      // cards / input
-        border: "#E5E2D6",
+        // Warm dark surfaces, in the spirit of claude.ai's dark theme.
+        canvas: "#262624",      // main chat area
+        sidebar: "#1C1B19",     // left rail
+        raised: "#302F2C",      // cards / input
+        border: "#3B3A36",
         ink: {
-          DEFAULT: "#1F1E1C",   // primary text
-          soft: "#46443E",      // secondary text
-          faint: "#8A877C",     // tertiary / placeholders
+          DEFAULT: "#ECEAE3",   // primary text
+          soft: "#BEBBB2",      // secondary text
+          faint: "#8B887E",     // tertiary / placeholders
         },
         clay: {
-          DEFAULT: "#C2603F",   // Claude coral accent
-          hover: "#AB5236",
-          soft: "#EBD9CE",
+          DEFAULT: "#C9785C",   // Claude coral accent (brightened for dark)
+          hover: "#D88E72",
+          soft: "#3C2D26",      // user-bubble background (light text on warm dark)
         },
       },
       fontFamily: {

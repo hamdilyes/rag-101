@@ -45,10 +45,7 @@ export default function ChatInput({ onSend, disabled, placeholder }: ChatInputPr
         placeholder={placeholder ?? "Ask about your documents…"}
         className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-6 text-ink placeholder:text-ink-faint focus:outline-none"
       />
-      <div className="flex items-center justify-between px-3 pb-3 pt-1">
-        <span className="pl-1 text-xs text-ink-faint">
-          Enter to send · Shift+Enter for newline
-        </span>
+      <div className="flex items-center justify-end px-3 pb-3 pt-1">
         <button
           onClick={submit}
           disabled={disabled || !value.trim()}
